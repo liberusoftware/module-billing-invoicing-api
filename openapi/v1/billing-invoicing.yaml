@@ -5,6 +5,19 @@ info:
   license: {name: MIT, identifier: MIT}
 servers: [{url: /}]
 paths:
+  /api/v1/billing/invoicing/support:
+    get:
+      operationId: billing.invoicing.support.list
+      summary: List invoice support requests
+      security: [{sanctum: []}]
+      responses: {'200': {$ref: '#/components/responses/Collection'}, '401': {$ref: '#/components/responses/Unauthorized'}}
+    post:
+      operationId: billing.invoicing.support.create
+      summary: Create an invoice support request
+      security: [{sanctum: []}]
+      parameters: [{$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody: {required: true, content: {application/json: {schema: {type: object, additionalProperties: true}}}}
+      responses: {'201': {$ref: '#/components/responses/Document'}, '401': {$ref: '#/components/responses/Unauthorized'}, '422': {$ref: '#/components/responses/ValidationError'}}
   /api/v1/billing/invoicing:
     get:
       operationId: billing.invoicing.list
@@ -86,6 +99,14 @@ paths:
       security: [{sanctum: []}]
       parameters: [{name: invoice, in: path, required: true, schema: {type: string}}, {$ref: '#/components/parameters/IdempotencyKey'}]
       requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/AdjustmentRequest'}}}}
+      responses: {'200': {$ref: '#/components/responses/Document'}, '401': {$ref: '#/components/responses/Unauthorized'}, '422': {$ref: '#/components/responses/ValidationError'}}
+  /api/v1/billing/invoicing/{invoice}/late-fees:
+    post:
+      operationId: billing.invoicing.late-fees.create
+      summary: Apply an overdue invoice late fee
+      security: [{sanctum: []}]
+      parameters: [{name: invoice, in: path, required: true, schema: {type: string}}, {$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/LateFeeRequest'}}}}
       responses: {'200': {$ref: '#/components/responses/Document'}, '401': {$ref: '#/components/responses/Unauthorized'}, '422': {$ref: '#/components/responses/ValidationError'}}
   /api/v1/billing/invoicing/{invoice}/document:
     post:
@@ -180,6 +201,11 @@ components:
         amount_minor: {type: integer, not: {const: 0}}
         reason: {type: string, maxLength: 1000}
         type: {type: string, enum: [credit, adjustment]}
+    LateFeeRequest:
+      type: object
+      required: [amount_minor]
+      properties:
+        amount_minor: {type: integer, minimum: 1}
     DeliveryRequest:
       type: object
       required: [destination]
